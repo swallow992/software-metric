@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>估算报告 - Software Metric</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body>
+<main class="shell">
+    <nav class="topbar" aria-label="主导航">
+        <a class="brand" th:href="@{/}">Software Metric</a>
+        <div class="nav-actions">
+            <a class="nav-link" th:href="@{/}">总览</a>
+            <a class="nav-link" th:href="@{/analyze}">源码分析</a>
+            <a class="nav-link" th:href="@{/estimate}">估算模型</a>
+            <a class="nav-link" th:href="@{/use-case-model}">用例模型</a>
+        </div>
+    </nav>
+
+    <section class="workspace single estimate-workspace">
+        <section class="panel message-panel error-panel" th:if="${errorMessage}">
+            <h1>报告生成失败</h1>
+            <p th:text="${errorMessage}">参数不正确。</p>
+        </section>
+
+        <section class="panel result-panel" th:if="${result}">
+            <div class="result-heading">
+                <div>
+                    <p class="eyebrow">项目估算报告</p>
+                    <h1>软件项目估算报告</h1>
+                    <p class="lead">基于功能点、用例点和 COCOMO 模型生成。</p>
+                </div>
+                <form class="inline-report-form" method="get">
+                    <input type="hidden" name="externalInputs" th:value="${input.externalInputs()}">
+                    <input type="hidden" name="externalOutputs" th:value="${input.externalOutputs()}">
+                    <input type="hidden" name="externalInquiries" th:value="${input.externalInquiries()}">
+                    <input type="hidden" name="internalLogicalFiles" th:value="${input.internalLogicalFiles()}">
+                    <input type="hidden" name="externalInterfaceFiles" th:value="${input.externalInterfaceFiles()}">
+                    <input type="hidden" name="technicalComplexityDegree" th:value="${input.technicalComplexityDegree()}">
+                    <input type="hidden" name="simpleActors" th:value="${input.simpleActors()}">
+                    <input type="hidden" name="averageActors" th:value="${input.averageActors()}">
+                    <input type="hidden" name="complexActors" th:value="${input.complexActors()}">
+                    <input type="hidden" name="simpleUseCases" th:value="${input.simpleUseCases()}">
+                    <input type="hidden" name="averageUseCases" th:value="${input.averageUseCases()}">
+                    <input type="hidden" name="complexUseCases" th:value="${input.complexUseCases()}">
+                    <input type="hidden" name="useCaseTechnicalFactor" th:value="${input.useCaseTechnicalFactor()}">
+                    <input type="hidden" name="useCaseEnvironmentalFactor" th:value="${input.useCaseEnvironmentalFactor()}">
+                    <input type="hidden" name="hoursPerUseCasePoint" th:value="${input.hoursPerUseCasePoint()}">
+                    <input type="hidden" name="sourceKloc" th:value="${input.sourceKloc()}">
+                    <input type="hidden" name="cocomoMode" th:value="${input.cocomoMode()}">
+                    <input type="hidden" name="personMonthCost" th:value="${input.personMonthCost()}">
+                    <button class="secondary-button" type="submit" th:formaction="@{/reports/estimate/markdown}">Markdown</button>
+                    <button class="secondary-button" type="submit" th:formaction="@{/reports/estimate/pdf}">PDF</button>
+                </form>
+            </div>
+
+            <div class="summary-grid estimate-summary">
+                <div class="summary-item">
+                    <span>功能点 FP</span>
+                    <strong th:text="${#numbers.formatDecimal(result.functionPoints(), 1, 2)}">0.00</strong>
+                </div>
+                <div class="summary-item">
+                    <span>用例点 UCP</span>
+                    <strong th:text="${#numbers.formatDecimal(result.useCasePoints(), 1, 2)}">0.00</strong>
+                </div>
+                <div class="summary-item">
+                    <span>COCOMO 工作量</span>
+                    <strong th:text="${#numbers.formatDecimal(result.cocomoEffortPersonMonths(), 1, 2)}">0.00</strong>
+                </div>
+                <div class="summary-item">
+                    <span>估算成本</span>
+                    <strong th:text="${#numbers.formatDecimal(result.estimatedCost(), 1, 2)}">0.00</strong>
+                </div>
+            </div>
+        </section>
+
+        <section class="panel" th:if="${result}">
+            <div class="result-heading">
+                <div>
+                    <p class="eyebrow">功能点</p>
+                    <h2>FP 估算参数与结果</h2>
+                </div>
+            </div>
+            <div class="table-wrap">
+                <table class="metric-table">
+                    <tbody>
+                    <tr><th>外部输入 EI</th><td th:text="${input.externalInputs()}">0</td></tr>
+                    <tr><th>外部输出 EO</th><td th:text="${input.externalOutputs()}">0</td></tr>
+                    <tr><th>外部查询 EQ</th><td th:text="${input.externalInquiries()}">0</td></tr>
+                    <tr><th>内部逻辑文件 ILF</th><td th:text="${input.internalLogicalFiles()}">0</td></tr>
+                    <tr><th>外部接口文件 EIF</th><td th:text="${input.externalInterfaceFiles()}">0</td></tr>
+                    <tr><th>技术复杂度调整值</th><td th:text="${input.technicalComplexityDegree()}">0</td></tr>
+                    <tr><th>未调整功能点 UFP</th><td th:text="${result.unadjustedFunctionPoints()}">0</td></tr>
+                    <tr><th>调整系数 VAF</th><td th:text="${#numbers.formatDecimal(result.valueAdjustmentFactor(), 1, 2)}">0.00</td></tr>
+                    <tr><th>功能点 FP</th><td th:text="${#numbers.formatDecimal(result.functionPoints(), 1, 2)}">0.00</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="panel" th:if="${result}">
+            <div class="result-heading">
+                <div>
+                    <p class="eyebrow">用例点</p>
+                    <h2>UCP 估算参数与结果</h2>
+                </div>
+            </div>
+            <div class="table-wrap">
+                <table class="metric-table">
+                    <tbody>
+                    <tr><th>简单参与者</th><td th:text="${input.simpleActors()}">0</td></tr>
+                    <tr><th>一般参与者</th><td th:text="${input.averageActors()}">0</td></tr>
+                    <tr><th>复杂参与者</th><td th:text="${input.complexActors()}">0</td></tr>
+                    <tr><th>简单用例</th><td th:text="${input.simpleUseCases()}">0</td></tr>
+                    <tr><th>一般用例</th><td th:text="${input.averageUseCases()}">0</td></tr>
+                    <tr><th>复杂用例</th><td th:text="${input.complexUseCases()}">0</td></tr>
+                    <tr><th>技术因子</th><td th:text="${#numbers.formatDecimal(input.useCaseTechnicalFactor(), 1, 2)}">0.00</td></tr>
+                    <tr><th>环境因子</th><td th:text="${#numbers.formatDecimal(input.useCaseEnvironmentalFactor(), 1, 2)}">0.00</td></tr>
+                    <tr><th>每用例点工时</th><td th:text="${#numbers.formatDecimal(input.hoursPerUseCasePoint(), 1, 2)}">0.00</td></tr>
+                    <tr><th>参与者权重</th><td th:text="${result.actorWeight()}">0</td></tr>
+                    <tr><th>用例权重</th><td th:text="${result.useCaseWeight()}">0</td></tr>
+                    <tr><th>用例点 UCP</th><td th:text="${#numbers.formatDecimal(result.useCasePoints(), 1, 2)}">0.00</td></tr>
+                    <tr><th>用例工作量（人月）</th><td th:text="${#numbers.formatDecimal(result.useCaseEffortPersonMonths(), 1, 2)}">0.00</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="panel" th:if="${result}">
+            <div class="result-heading">
+                <div>
+                    <p class="eyebrow">COCOMO</p>
+                    <h2>工作量、工期与成本</h2>
+                </div>
+            </div>
+            <div class="table-wrap">
+                <table class="metric-table">
+                    <tbody>
+                    <tr><th>规模 KLOC</th><td th:text="${#numbers.formatDecimal(input.sourceKloc(), 1, 2)}">0.00</td></tr>
+                    <tr><th>项目类型</th><td th:text="${result.cocomoModeName()}">有机型</td></tr>
+                    <tr><th>人月成本</th><td th:text="${#numbers.formatDecimal(input.personMonthCost(), 1, 2)}">0.00</td></tr>
+                    <tr><th>COCOMO 工作量（人月）</th><td th:text="${#numbers.formatDecimal(result.cocomoEffortPersonMonths(), 1, 2)}">0.00</td></tr>
+                    <tr><th>开发工期（月）</th><td th:text="${#numbers.formatDecimal(result.developmentTimeMonths(), 1, 2)}">0.00</td></tr>
+                    <tr><th>平均人员</th><td th:text="${#numbers.formatDecimal(result.averageStaff(), 1, 2)}">0.00</td></tr>
+                    <tr><th>估算成本</th><td th:text="${#numbers.formatDecimal(result.estimatedCost(), 1, 2)}">0.00</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </section>
+</main>
+<script th:src="@{/js/app.js}"></script>
+</body>
+</html>

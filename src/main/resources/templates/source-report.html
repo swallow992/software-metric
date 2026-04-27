@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>分析报告 - Software Metric</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body>
+<main class="shell">
+    <nav class="topbar" aria-label="主导航">
+        <a class="brand" th:href="@{/}">Software Metric</a>
+        <div class="nav-actions">
+            <a class="nav-link" th:href="@{/}">总览</a>
+            <a class="nav-link" th:href="@{/analyze}">源码分析</a>
+            <a class="nav-link" th:href="@{/estimate}">估算模型</a>
+            <a class="nav-link" th:href="@{/use-case-model}">用例模型</a>
+        </div>
+    </nav>
+
+    <section class="workspace single analysis-workspace">
+        <section class="panel message-panel error-panel" th:if="${errorMessage}">
+            <h1>报告生成失败</h1>
+            <p th:text="${errorMessage}">源码路径不存在。</p>
+        </section>
+
+        <section class="panel result-panel" th:if="${result}">
+            <div class="result-heading">
+                <div>
+                    <p class="eyebrow">源码分析报告</p>
+                    <h1>软件度量分析报告</h1>
+                    <p class="lead" th:text="${result.sourceRoot()}">源码目录</p>
+                </div>
+                <div class="action-row compact-actions">
+                    <a class="secondary-button" th:href="@{/reports/source/markdown(sourcePath=${sourcePath})}">Markdown</a>
+                    <a class="secondary-button" th:href="@{/reports/source/pdf(sourcePath=${sourcePath})}">PDF</a>
+                </div>
+            </div>
+
+            <div class="summary-grid">
+                <div class="summary-item">
+                    <span>Java 文件</span>
+                    <strong th:text="${result.javaFileCount()}">0</strong>
+                </div>
+                <div class="summary-item">
+                    <span>类</span>
+                    <strong th:text="${result.classCount()}">0</strong>
+                </div>
+                <div class="summary-item">
+                    <span>方法</span>
+                    <strong th:text="${result.methodCount()}">0</strong>
+                </div>
+                <div class="summary-item">
+                    <span>有效代码行</span>
+                    <strong th:text="${result.codeLines()}">0</strong>
+                </div>
+                <div class="summary-item">
+                    <span>总圈复杂度</span>
+                    <strong th:text="${result.totalCyclomaticComplexity()}">0</strong>
+                </div>
+                <div class="summary-item">
+                    <span>平均方法复杂度</span>
+                    <strong th:text="${#numbers.formatDecimal(result.averageMethodCyclomaticComplexity(), 1, 2)}">0.00</strong>
+                </div>
+            </div>
+        </section>
+
+        <section class="panel chart-panel" th:if="${result}">
+            <div class="result-heading">
+                <div>
+                    <p class="eyebrow">可视化概览</p>
+                    <h2>度量图表</h2>
+                </div>
+            </div>
+
+            <div class="chart-grid"
+                 data-analysis-charts
+                 th:data-code-lines="${result.codeLines()}"
+                 th:data-comment-lines="${result.commentLines()}"
+                 th:data-blank-lines="${result.blankLines()}">
+                <div class="chart-tile">
+                    <h3>代码行分布</h3>
+                    <div class="metric-chart" data-chart="lineDistribution"></div>
+                </div>
+                <div class="chart-tile">
+                    <h3>文件有效代码行</h3>
+                    <div class="metric-chart" data-chart="fileCodeLines"></div>
+                </div>
+                <div class="chart-tile">
+                    <h3>类级 CK 指标</h3>
+                    <div class="metric-chart" data-chart="ckMetrics"></div>
+                </div>
+                <div class="chart-tile">
+                    <h3>风险等级分布</h3>
+                    <div class="metric-chart" data-chart="riskDistribution"></div>
+                </div>
+
+                <div hidden>
+                    <span th:each="fileMetric : ${result.fileMetrics()}"
+                          data-file-metric
+                          th:data-name="${fileMetric.sourceFile()}"
+                          th:data-total-lines="${fileMetric.totalLines()}"
+                          th:data-code-lines="${fileMetric.codeLines()}"
+                          th:data-comment-lines="${fileMetric.commentLines()}"
+                          th:data-blank-lines="${fileMetric.blankLines()}"></span>
+                    <span th:each="type : ${result.types()}"
+                          data-type-metric
+                          th:data-name="${type.name()}"
+                          th:data-qualified-name="${type.qualifiedName()}"
+                          th:data-wmc="${type.ckMetric().weightedMethodsPerClass()}"
+                          th:data-dit="${type.ckMetric().depthOfInheritanceTree()}"
+                          th:data-noc="${type.ckMetric().numberOfChildren()}"
+                          th:data-cbo="${type.ckMetric().couplingBetweenObjects()}"
+                          th:data-rfc="${type.ckMetric().responseForClass()}"
+                          th:data-lcom="${type.ckMetric().lackOfCohesionInMethods()}"
+                          th:data-risk="${type.ckMetric().riskLevel()}"></span>
+                </div>
+            </div>
+        </section>
+
+        <section class="panel" th:if="${result}">
+            <div class="result-heading">
+                <div>
+                    <p class="eyebrow">文件明细</p>
+                    <h2>代码规模</h2>
+                </div>
+            </div>
+            <div class="table-wrap">
+                <table class="metric-table">
+                    <thead>
+                    <tr>
+                        <th>文件</th>
+                        <th>总行数</th>
+                        <th>有效代码行</th>
+                        <th>注释行</th>
+                        <th>空行</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="fileMetric : ${result.fileMetrics()}">
+                        <td th:text="${fileMetric.sourceFile()}">Sample.java</td>
+                        <td th:text="${fileMetric.totalLines()}">0</td>
+                        <td th:text="${fileMetric.codeLines()}">0</td>
+                        <td th:text="${fileMetric.commentLines()}">0</td>
+                        <td th:text="${fileMetric.blankLines()}">0</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="panel" th:if="${result}">
+            <div class="result-heading">
+                <div>
+                    <p class="eyebrow">CK 指标</p>
+                    <h2>类级面向对象度量</h2>
+                </div>
+            </div>
+            <div class="table-wrap">
+                <table class="metric-table">
+                    <thead>
+                    <tr>
+                        <th>类型</th>
+                        <th>WMC</th>
+                        <th>DIT</th>
+                        <th>NOC</th>
+                        <th>CBO</th>
+                        <th>RFC</th>
+                        <th>LCOM</th>
+                        <th>风险</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="type : ${result.types()}">
+                        <td th:text="${type.qualifiedName()}">Sample</td>
+                        <td th:text="${type.ckMetric().weightedMethodsPerClass()}">0</td>
+                        <td th:text="${type.ckMetric().depthOfInheritanceTree()}">0</td>
+                        <td th:text="${type.ckMetric().numberOfChildren()}">0</td>
+                        <td th:text="${type.ckMetric().couplingBetweenObjects()}">0</td>
+                        <td th:text="${type.ckMetric().responseForClass()}">0</td>
+                        <td th:text="${type.ckMetric().lackOfCohesionInMethods()}">0</td>
+                        <td th:text="${type.ckMetric().riskLevel()}">低风险</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </section>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+<script th:src="@{/js/app.js}"></script>
+</body>
+</html>

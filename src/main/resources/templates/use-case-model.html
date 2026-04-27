@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>用例模型 - Software Metric</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body>
+<main class="shell">
+    <nav class="topbar" aria-label="主导航">
+        <a class="brand" th:href="@{/}">Software Metric</a>
+        <div class="nav-actions">
+            <a class="nav-link" th:href="@{/}">总览</a>
+            <a class="nav-link" th:href="@{/analyze}">源码分析</a>
+            <a class="nav-link" th:href="@{/estimate}">估算模型</a>
+            <a class="nav-link active" th:href="@{/use-case-model}">用例模型</a>
+        </div>
+    </nav>
+
+    <section class="workspace single estimate-workspace">
+        <form class="panel estimate-form" method="post" th:action="@{/use-case-model}">
+            <div>
+                <p class="eyebrow">UML / Use Case</p>
+                <h1>用例模型输入</h1>
+            </div>
+
+            <section class="form-section">
+                <h2>参与者与用例</h2>
+                <div class="structured-grid">
+                    <label class="field">
+                        <span>参与者</span>
+                        <textarea name="actorsText" rows="8" th:text="${input.actorsText()}"
+                                  placeholder="普通用户, 复杂&#10;支付平台, 一般&#10;通知服务, 简单"></textarea>
+                    </label>
+                    <label class="field">
+                        <span>用例</span>
+                        <textarea name="useCasesText" rows="8" th:text="${input.useCasesText()}"
+                                  placeholder="注册账号, 简单&#10;提交订单, 一般&#10;支付订单, 复杂"></textarea>
+                    </label>
+                </div>
+            </section>
+
+            <section class="form-section">
+                <h2>调整参数</h2>
+                <div class="form-grid">
+                    <label class="field">
+                        <span>技术因子</span>
+                        <input type="number" min="0.1" step="0.01" name="technicalFactor" th:value="${input.technicalFactor()}">
+                    </label>
+                    <label class="field">
+                        <span>环境因子</span>
+                        <input type="number" min="0.1" step="0.01" name="environmentalFactor" th:value="${input.environmentalFactor()}">
+                    </label>
+                    <label class="field">
+                        <span>每用例点工时</span>
+                        <input type="number" min="0.1" step="0.1" name="hoursPerUseCasePoint" th:value="${input.hoursPerUseCasePoint()}">
+                    </label>
+                </div>
+            </section>
+
+            <button class="primary-button" type="submit">计算用例点</button>
+        </form>
+
+        <section class="panel message-panel error-panel" th:if="${errorMessage}">
+            <h2>计算失败</h2>
+            <p th:text="${errorMessage}">输入不正确。</p>
+        </section>
+
+        <section class="panel result-panel" th:if="${result}">
+            <div class="result-heading">
+                <div>
+                    <p class="eyebrow">结构化结果</p>
+                    <h2>用例点 UCP</h2>
+                </div>
+                <form class="inline-report-form" method="post" th:action="@{/estimate}">
+                    <input type="hidden" name="externalInputs" value="4">
+                    <input type="hidden" name="externalOutputs" value="3">
+                    <input type="hidden" name="externalInquiries" value="2">
+                    <input type="hidden" name="internalLogicalFiles" value="2">
+                    <input type="hidden" name="externalInterfaceFiles" value="1">
+                    <input type="hidden" name="technicalComplexityDegree" value="35">
+                    <input type="hidden" name="simpleActors" th:value="${result.simpleActorCount()}">
+                    <input type="hidden" name="averageActors" th:value="${result.averageActorCount()}">
+                    <input type="hidden" name="complexActors" th:value="${result.complexActorCount()}">
+                    <input type="hidden" name="simpleUseCases" th:value="${result.simpleUseCaseCount()}">
+                    <input type="hidden" name="averageUseCases" th:value="${result.averageUseCaseCount()}">
+                    <input type="hidden" name="complexUseCases" th:value="${result.complexUseCaseCount()}">
+                    <input type="hidden" name="useCaseTechnicalFactor" th:value="${input.technicalFactor()}">
+                    <input type="hidden" name="useCaseEnvironmentalFactor" th:value="${input.environmentalFactor()}">
+                    <input type="hidden" name="hoursPerUseCasePoint" th:value="${input.hoursPerUseCasePoint()}">
+                    <input type="hidden" name="sourceKloc" value="5.0">
+                    <input type="hidden" name="cocomoMode" value="organic">
+                    <input type="hidden" name="personMonthCost" value="12000.0">
+                    <button class="secondary-button" type="submit">带入估算模型</button>
+                </form>
+            </div>
+
+            <div class="summary-grid estimate-summary">
+                <div class="summary-item">
+                    <span>参与者权重</span>
+                    <strong th:text="${result.actorWeight()}">0</strong>
+                </div>
+                <div class="summary-item">
+                    <span>用例权重</span>
+                    <strong th:text="${result.useCaseWeight()}">0</strong>
+                </div>
+                <div class="summary-item">
+                    <span>未调整用例点</span>
+                    <strong th:text="${result.unadjustedUseCasePoints()}">0</strong>
+                </div>
+                <div class="summary-item">
+                    <span>用例点 UCP</span>
+                    <strong th:text="${#numbers.formatDecimal(result.useCasePoints(), 1, 2)}">0.00</strong>
+                </div>
+                <div class="summary-item">
+                    <span>工作量小时</span>
+                    <strong th:text="${#numbers.formatDecimal(result.effortHours(), 1, 2)}">0.00</strong>
+                </div>
+                <div class="summary-item">
+                    <span>工作量人月</span>
+                    <strong th:text="${#numbers.formatDecimal(result.effortPersonMonths(), 1, 2)}">0.00</strong>
+                </div>
+            </div>
+        </section>
+
+        <section class="panel" th:if="${result}">
+            <div class="result-heading">
+                <div>
+                    <p class="eyebrow">明细</p>
+                    <h2>参与者</h2>
+                </div>
+            </div>
+            <div class="table-wrap">
+                <table class="metric-table">
+                    <thead>
+                    <tr>
+                        <th>名称</th>
+                        <th>复杂度</th>
+                        <th>权重</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="actor : ${result.actors()}">
+                        <td th:text="${actor.name()}">用户</td>
+                        <td th:text="${actor.complexity()}">复杂</td>
+                        <td th:text="${actor.weight()}">3</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="panel" th:if="${result}">
+            <div class="result-heading">
+                <div>
+                    <p class="eyebrow">明细</p>
+                    <h2>用例</h2>
+                </div>
+            </div>
+            <div class="table-wrap">
+                <table class="metric-table">
+                    <thead>
+                    <tr>
+                        <th>名称</th>
+                        <th>复杂度</th>
+                        <th>权重</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="useCase : ${result.useCases()}">
+                        <td th:text="${useCase.name()}">支付订单</td>
+                        <td th:text="${useCase.complexity()}">复杂</td>
+                        <td th:text="${useCase.weight()}">15</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </section>
+</main>
+<script th:src="@{/js/app.js}"></script>
+</body>
+</html>

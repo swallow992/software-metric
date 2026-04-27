@@ -1,0 +1,304 @@
+<!doctype html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>源码分析 - Software Metric</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body>
+<main class="shell">
+    <nav class="topbar" aria-label="主导航">
+        <a class="brand" th:href="@{/}">Software Metric</a>
+        <div class="nav-actions">
+            <a class="nav-link" th:href="@{/}">总览</a>
+            <a class="nav-link active" th:href="@{/analyze}">源码分析</a>
+            <a class="nav-link" th:href="@{/estimate}">估算模型</a>
+            <a class="nav-link" th:href="@{/use-case-model}">用例模型</a>
+        </div>
+    </nav>
+
+    <section class="workspace single analysis-workspace">
+        <form class="panel analysis-form" method="post" th:action="@{/analyze}">
+            <div>
+                <p class="eyebrow">Java 源码目录</p>
+                <h1>源码分析</h1>
+            </div>
+
+            <label class="field">
+                <span>源码路径</span>
+                <input type="text" name="sourcePath" th:value="${sourcePath}">
+            </label>
+
+            <div class="metric-grid" aria-label="待实现指标">
+                <div class="metric-chip">LoC</div>
+                <div class="metric-chip">圈复杂度</div>
+                <div class="metric-chip">CK 指标</div>
+                <div class="metric-chip">风险等级</div>
+            </div>
+
+            <button class="primary-button" type="submit">分析源码</button>
+        </form>
+
+        <form class="panel analysis-form" method="post" enctype="multipart/form-data" th:action="@{/analyze/upload}">
+            <div>
+                <p class="eyebrow">ZIP 源码包</p>
+                <h2>上传并分析</h2>
+                <p class="form-help">支持上传包含 Java 源码的 .zip 包，系统会自动解压并扫描其中的 .java 文件。</p>
+            </div>
+
+            <label class="field">
+                <span>源码 zip 文件</span>
+                <input type="file" name="sourceZip" accept=".zip,application/zip,application/x-zip-compressed">
+            </label>
+
+            <button class="secondary-button" type="submit">上传 zip 并分析</button>
+        </form>
+
+        <section class="panel message-panel error-panel" th:if="${errorMessage}">
+            <h2>分析失败</h2>
+            <p th:text="${errorMessage}">源码路径不存在。</p>
+        </section>
+
+        <section class="panel result-panel" th:if="${result}">
+            <div class="result-heading">
+                <div>
+                    <p class="eyebrow">解析结果</p>
+                    <h2 th:text="${result.sourceRoot()}">源码根目录</h2>
+                </div>
+                <div class="action-row compact-actions">
+                    <a class="secondary-button" th:href="@{/reports/source/html(sourcePath=${sourcePath})}">HTML 报告</a>
+                    <a class="secondary-button" th:href="@{/reports/source/markdown(sourcePath=${sourcePath})}">Markdown</a>
+                    <a class="secondary-button" th:href="@{/reports/source/pdf(sourcePath=${sourcePath})}">PDF</a>
+                </div>
+            </div>
+
+            <div class="summary-grid">
+                <div class="summary-item">
+                    <span>Java 文件</span>
+                    <strong th:text="${result.javaFileCount()}">0</strong>
+                </div>
+                <div class="summary-item">
+                    <span>包</span>
+                    <strong th:text="${result.packageCount()}">0</strong>
+                </div>
+                <div class="summary-item">
+                    <span>类</span>
+                    <strong th:text="${result.classCount()}">0</strong>
+                </div>
+                <div class="summary-item">
+                    <span>接口</span>
+                    <strong th:text="${result.interfaceCount()}">0</strong>
+                </div>
+                <div class="summary-item">
+                    <span>方法</span>
+                    <strong th:text="${result.methodCount()}">0</strong>
+                </div>
+                <div class="summary-item">
+                    <span>字段</span>
+                    <strong th:text="${result.fieldCount()}">0</strong>
+                </div>
+                <div class="summary-item">
+                    <span>总行数</span>
+                    <strong th:text="${result.totalLines()}">0</strong>
+                </div>
+                <div class="summary-item">
+                    <span>有效代码行</span>
+                    <strong th:text="${result.codeLines()}">0</strong>
+                </div>
+                <div class="summary-item">
+                    <span>注释行</span>
+                    <strong th:text="${result.commentLines()}">0</strong>
+                </div>
+                <div class="summary-item">
+                    <span>空行</span>
+                    <strong th:text="${result.blankLines()}">0</strong>
+                </div>
+                <div class="summary-item">
+                    <span>总圈复杂度</span>
+                    <strong th:text="${result.totalCyclomaticComplexity()}">0</strong>
+                </div>
+                <div class="summary-item">
+                    <span>平均方法复杂度</span>
+                    <strong th:text="${#numbers.formatDecimal(result.averageMethodCyclomaticComplexity(), 1, 2)}">0.00</strong>
+                </div>
+            </div>
+        </section>
+
+        <section class="panel chart-panel" th:if="${result != null}">
+            <div class="result-heading">
+                <div>
+                    <p class="eyebrow">可视化概览</p>
+                    <h2>度量图表</h2>
+                </div>
+            </div>
+
+            <div class="chart-grid"
+                 data-analysis-charts
+                 th:data-code-lines="${result.codeLines()}"
+                 th:data-comment-lines="${result.commentLines()}"
+                 th:data-blank-lines="${result.blankLines()}">
+                <div class="chart-tile">
+                    <h3>代码行分布</h3>
+                    <div class="metric-chart" data-chart="lineDistribution"></div>
+                </div>
+                <div class="chart-tile">
+                    <h3>文件有效代码行</h3>
+                    <div class="metric-chart" data-chart="fileCodeLines"></div>
+                </div>
+                <div class="chart-tile">
+                    <h3>类级 CK 指标</h3>
+                    <div class="metric-chart" data-chart="ckMetrics"></div>
+                </div>
+                <div class="chart-tile">
+                    <h3>风险等级分布</h3>
+                    <div class="metric-chart" data-chart="riskDistribution"></div>
+                </div>
+
+                <div hidden>
+                    <span th:each="fileMetric : ${result.fileMetrics()}"
+                          data-file-metric
+                          th:data-name="${fileMetric.sourceFile()}"
+                          th:data-total-lines="${fileMetric.totalLines()}"
+                          th:data-code-lines="${fileMetric.codeLines()}"
+                          th:data-comment-lines="${fileMetric.commentLines()}"
+                          th:data-blank-lines="${fileMetric.blankLines()}"></span>
+                    <span th:each="type : ${result.types()}"
+                          data-type-metric
+                          th:data-name="${type.name()}"
+                          th:data-qualified-name="${type.qualifiedName()}"
+                          th:data-wmc="${type.ckMetric().weightedMethodsPerClass()}"
+                          th:data-dit="${type.ckMetric().depthOfInheritanceTree()}"
+                          th:data-noc="${type.ckMetric().numberOfChildren()}"
+                          th:data-cbo="${type.ckMetric().couplingBetweenObjects()}"
+                          th:data-rfc="${type.ckMetric().responseForClass()}"
+                          th:data-lcom="${type.ckMetric().lackOfCohesionInMethods()}"
+                          th:data-risk="${type.ckMetric().riskLevel()}"></span>
+                </div>
+            </div>
+        </section>
+
+        <section class="panel file-metric-panel" th:if="${result != null and result.hasFileMetrics()}">
+            <div class="result-heading">
+                <div>
+                    <p class="eyebrow">LoC 明细</p>
+                    <h2>文件行数统计</h2>
+                </div>
+            </div>
+
+            <div class="table-wrap">
+                <table class="metric-table">
+                    <thead>
+                    <tr>
+                        <th>文件</th>
+                        <th>总行数</th>
+                        <th>有效代码行</th>
+                        <th>注释行</th>
+                        <th>空行</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="fileMetric : ${result.fileMetrics()}">
+                        <td th:text="${fileMetric.sourceFile()}">src/main/java/Sample.java</td>
+                        <td th:text="${fileMetric.totalLines()}">0</td>
+                        <td th:text="${fileMetric.codeLines()}">0</td>
+                        <td th:text="${fileMetric.commentLines()}">0</td>
+                        <td th:text="${fileMetric.blankLines()}">0</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="panel type-list-panel" th:if="${result != null and result.hasTypes()}">
+            <div class="result-heading">
+                <div>
+                    <p class="eyebrow">类型明细</p>
+                    <h2>类、接口与成员</h2>
+                </div>
+            </div>
+
+            <article class="type-card" th:each="type : ${result.types()}">
+                <div class="type-title-row">
+                    <div>
+                        <h3 th:text="${type.qualifiedName()}">com.example.Sample</h3>
+                        <p th:text="${type.sourceFile()}">src/main/java/Sample.java</p>
+                    </div>
+                    <span class="type-kind" th:text="${type.kind()}">类</span>
+                </div>
+
+                <dl class="type-meta">
+                    <div>
+                        <dt>父类</dt>
+                        <dd th:text="${#strings.isEmpty(type.superClassName()) ? '无' : type.superClassName()}">无</dd>
+                    </div>
+                    <div>
+                        <dt>接口</dt>
+                        <dd th:text="${type.interfaces().isEmpty() ? '无' : #strings.listJoin(type.interfaces(), ', ')}">无</dd>
+                    </div>
+                </dl>
+
+                <div class="ck-grid" aria-label="CK 指标">
+                    <div>
+                        <span>WMC</span>
+                        <strong th:text="${type.ckMetric().weightedMethodsPerClass()}">0</strong>
+                    </div>
+                    <div>
+                        <span>DIT</span>
+                        <strong th:text="${type.ckMetric().depthOfInheritanceTree()}">0</strong>
+                    </div>
+                    <div>
+                        <span>NOC</span>
+                        <strong th:text="${type.ckMetric().numberOfChildren()}">0</strong>
+                    </div>
+                    <div>
+                        <span>CBO</span>
+                        <strong th:text="${type.ckMetric().couplingBetweenObjects()}">0</strong>
+                    </div>
+                    <div>
+                        <span>RFC</span>
+                        <strong th:text="${type.ckMetric().responseForClass()}">0</strong>
+                    </div>
+                    <div>
+                        <span>LCOM</span>
+                        <strong th:text="${type.ckMetric().lackOfCohesionInMethods()}">0</strong>
+                    </div>
+                    <div class="risk-cell">
+                        <span>风险</span>
+                        <strong th:text="${type.ckMetric().riskLevel()}">低风险</strong>
+                    </div>
+                </div>
+
+                <div class="member-grid">
+                    <div>
+                        <h4>方法</h4>
+                        <ul class="member-list" th:if="${!type.methods().isEmpty()}">
+                            <li th:each="method : ${type.methods()}">
+                                <span th:text="${method.returnType()}">void</span>
+                                <strong th:text="${method.name()}">method</strong>
+                                <em th:text="${'(' + #strings.listJoin(method.parameters(), ', ') + ')'}">()</em>
+                                <small th:text="${'CC ' + method.cyclomaticComplexity()}">CC 1</small>
+                            </li>
+                        </ul>
+                        <p class="empty-text" th:if="${type.methods().isEmpty()}">暂无方法</p>
+                    </div>
+
+                    <div>
+                        <h4>字段</h4>
+                        <ul class="member-list" th:if="${!type.fields().isEmpty()}">
+                            <li th:each="field : ${type.fields()}">
+                                <span th:text="${field.type()}">String</span>
+                                <strong th:text="${field.name()}">name</strong>
+                            </li>
+                        </ul>
+                        <p class="empty-text" th:if="${type.fields().isEmpty()}">暂无字段</p>
+                    </div>
+                </div>
+            </article>
+        </section>
+    </section>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+<script th:src="@{/js/app.js}"></script>
+</body>
+</html>

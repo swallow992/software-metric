@@ -1,0 +1,16 @@
+spring:
+  application:
+    name: software-metric
+  thymeleaf:
+    cache: false
+  servlet:
+    multipart:
+      max-file-size: 20MB
+      max-request-size: 20MB
+
+server:
+  port: 8080
+
+software-metric:
+  sample-source-root: examples/sample-java-project
+  upload-root: uploads/source-zips
