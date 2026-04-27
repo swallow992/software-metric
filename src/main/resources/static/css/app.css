@@ -78,7 +78,13 @@ a {
 }
 
 .workspace.single {
-    grid-template-columns: minmax(0, 760px);
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+}
+
+.workspace.single > * {
+    width: min(760px, 100%);
 }
 
 .analysis-workspace {
@@ -182,26 +188,6 @@ h2 {
     border-color: var(--line);
     background: var(--surface-strong);
     color: var(--primary-dark);
-}
-
-.status-panel {
-    align-self: stretch;
-}
-
-.step-list {
-    display: grid;
-    gap: 12px;
-    margin: 22px 0 0;
-    padding: 0;
-    list-style-position: inside;
-}
-
-.step-list li {
-    border: 1px solid var(--line);
-    border-radius: 6px;
-    background: #fbfdff;
-    color: var(--muted);
-    padding: 12px;
 }
 
 .analysis-form {

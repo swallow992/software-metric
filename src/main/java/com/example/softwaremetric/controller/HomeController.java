@@ -33,7 +33,6 @@ public class HomeController {
     @GetMapping("/")
     public String index(Model model) {
         model.addAttribute("phase", projectOverviewService.currentPhase());
-        model.addAttribute("nextSteps", projectOverviewService.nextSteps());
         return "index";
     }
 

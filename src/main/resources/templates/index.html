@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Software Metric</title>
-    <link rel="stylesheet" th:href="@{/css/app.css}">
+    <link rel="stylesheet" th:href="@{/css/app.css(v=2)}">
 </head>
 <body>
 <main class="shell">
@@ -18,7 +18,7 @@
         </div>
     </nav>
 
-    <section class="workspace">
+    <section class="workspace single">
         <div class="panel intro">
             <p class="eyebrow" th:text="${phase}">阶段一：项目初始化</p>
             <h1>软件度量自动化工具</h1>
@@ -29,13 +29,6 @@
                 <a class="secondary-button" th:href="@{/use-case-model}">用例模型</a>
                 <a class="secondary-button" href="/docs/PROJECT_PLAN.md">项目文档</a>
             </div>
-        </div>
-
-        <div class="panel status-panel">
-            <h2>当前任务</h2>
-            <ol class="step-list">
-                <li th:each="step : ${nextSteps}" th:text="${step}">接入 Eclipse JDT ASTParser</li>
-            </ol>
         </div>
     </section>
 </main>
